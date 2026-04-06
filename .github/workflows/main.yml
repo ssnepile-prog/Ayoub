@@ -1,50 +1,51 @@
-name: Windows RDP Ultimate
+name: Windows RDP
 on: [push]
 jobs:
   rdp:
     runs-on: windows-latest
     timeout-minutes: 360
     steps:
-      - name: Enable RDP + Full Bypass
+      - name: Enable RDP
         run: |
-          reg add "HKLM\SYSTEM\CurrentControlSet\Control\Terminal Server" /v fDenyTSConnections /t REG_DWORD /d 0 /f
-          reg add "HKLM\SYSTEM\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp" /v UserAuthentication /t REG_DWORD /d 0 /f
-          reg add "HKLM\SYSTEM\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp" /v SecurityLayer /t REG_DWORD /d 0 /f
-          reg add "HKLM\SYSTEM\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp" /v MinEncryptionLevel /t REG_DWORD /d 2 /f
-          reg add "HKLM\SYSTEM\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp" /v MaxIdleTime /t REG_DWORD /d 0 /f
-          reg add "HKLM\SYSTEM\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp" /v MaxConnectionTime /t REG_DWORD /d 0 /f
-          reg add "HKLM\SYSTEM\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp" /v MaxDisconnectionTime /t REG_DWORD /d 0 /f
-          reg add "HKLM\SYSTEM\CurrentControlSet\Control\Terminal Server" /v MaxOutstandingConnections /t REG_DWORD /d 1000 /f
-          reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows NT\Terminal Services" /v UserAuthentication /t REG_DWORD /d 0 /f
-          reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows NT\Terminal Services" /v SecurityLayer /t REG_DWORD /d 0 /f
-          reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows NT\Terminal Services" /v fDenyTSConnections /t REG_DWORD /d 0 /f
-          reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows NT\Terminal Services" /v MinEncryptionLevel /t REG_DWORD /d 2 /f
-          reg add "HKLM\SYSTEM\CurrentControlSet\Control\Lsa" /v LimitBlankPasswordUse /t REG_DWORD /d 0 /f
-          reg add "HKLM\SYSTEM\CurrentControlSet\Control\Lsa" /v DisableRestrictedAdmin /t REG_DWORD /d 0 /f
+          Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server' -name "fDenyTSConnections" -Value 0
           Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
-          netsh advfirewall firewall set rule group="remote desktop" new enable=yes
-          netsh advfirewall firewall add rule name="RDP-TCP" protocol=TCP dir=in localport=3389 action=allow
-          netsh advfirewall firewall add rule name="RDP-UDP" protocol=UDP dir=in localport=3389 action=allow
+          Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp' -name "UserAuthentication" -Value 1
 
       - name: Create User
         run: |
           net user rdpuser Password123! /add
           net localgroup administrators rdpuser /add
-          net accounts /maxpwage:unlimited
 
-      - name: Maximum CPU and System Performance
+      - name: Maximum Performance Boost
         run: |
           powercfg /setactive 8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c
-          powercfg /setacvalueindex 8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c 54533251-82be-4824-96c1-47b60b740d00 893dee8e-2bef-41e0-89c6-b55d0929964c 100
-          powercfg /setacvalueindex 8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c 54533251-82be-4824-96c1-47b60b740d00 bc5038f7-23e0-4960-96da-33abaf5935ec 100
-          powercfg /setacvalueindex 8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c 54533251-82be-4824-96c1-47b60b740d00 0cc5b647-c1df-4637-891a-dec35c318583 100
-          bcdedit /set useplatformtick yes
-          bcdedit /set disabledynamictick yes
           Set-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile" -Name "SystemResponsiveness" -Value 0
           Set-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\PriorityControl" -Name "Win32PrioritySeparation" -Value 38
           Set-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Services\LanmanWorkstation\Parameters" -Name "DisableBandwidthThrottling" -Value 1
+          Set-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Services\LanmanWorkstation\Parameters" -Name "DisableLargeMtu" -Value 0
 
-      - name: RDP Ultra Smooth Settings
+      - name: Gaming CPU Priority
+        run: |
+          Set-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile\Tasks\Games" -Name "Affinity" -Value 0
+          Set-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile\Tasks\Games" -Name "Background Only" -Value "False"
+          Set-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile\Tasks\Games" -Name "Clock Rate" -Value 10000
+          Set-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile\Tasks\Games" -Name "GPU Priority" -Value 8
+          Set-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile\Tasks\Games" -Name "Priority" -Value 6
+          Set-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile\Tasks\Games" -Name "Scheduling Category" -Value "High"
+          Set-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile\Tasks\Games" -Name "SFIO Priority" -Value "High"
+
+      - name: Disable Game Bar and Xbox Bloat
+        run: |
+          Set-ItemProperty -Path "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\GameDVR" -Name "AppCaptureEnabled" -Value 0 -ErrorAction SilentlyContinue
+          Set-ItemProperty -Path "HKCU:\System\GameConfigStore" -Name "GameDVR_Enabled" -Value 0 -ErrorAction SilentlyContinue
+          Stop-Service -Name "XblAuthManager" -Force -ErrorAction SilentlyContinue
+          Set-Service -Name "XblAuthManager" -StartupType Disabled -ErrorAction SilentlyContinue
+          Stop-Service -Name "XblGameSave" -Force -ErrorAction SilentlyContinue
+          Set-Service -Name "XblGameSave" -StartupType Disabled -ErrorAction SilentlyContinue
+          Stop-Service -Name "XboxNetApiSvc" -Force -ErrorAction SilentlyContinue
+          Set-Service -Name "XboxNetApiSvc" -StartupType Disabled -ErrorAction SilentlyContinue
+
+      - name: Optimize RDP Quality
         run: |
           Set-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp" -Name "ColorDepth" -Value 4
           Set-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp" -Name "fDisableWallpaper" -Value 1
@@ -52,59 +53,26 @@ jobs:
           Set-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp" -Name "fDisableMenuAnims" -Value 1
           Set-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp" -Name "fDisableThemes" -Value 1
           Set-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp" -Name "MaxCompressionLevel" -Value 2
-          Set-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp" -Name "InteractiveDelay" -Value 0
 
-      - name: Kill All Useless Services
+      - name: Disable Useless Services
         run: |
-          $services = @(
-            "SysMain","WSearch","DiagTrack","RetailDemo","MapsBroker",
-            "RemoteRegistry","Fax","WerSvc","TabletInputService",
-            "XblAuthManager","XblGameSave","XboxNetApiSvc","XboxGipSvc",
-            "wisvc","WMPNetworkSvc","icssvc","PhoneSvc","TapiSrv",
-            "Spooler","stisvc","WbioSrvc","SCPolicySvc","NgcSvc",
-            "NgcCtnrSvc","CDPSvc","OneSyncSvc","MessagingService",
-            "UserDataSvc","PimIndexMaintenanceSvc","wuauserv","UsoSvc",
-            "DoSvc","WaaSMedicSvc","uhssvc","edgeupdate","MicrosoftEdgeElevationService"
-          )
+          $services = @("SysMain","WSearch","DiagTrack","RetailDemo","MapsBroker","RemoteRegistry","Fax","PrintSpooler","TabletInputService","WerSvc")
           foreach ($svc in $services) {
             Stop-Service -Name $svc -Force -ErrorAction SilentlyContinue
             Set-Service -Name $svc -StartupType Disabled -ErrorAction SilentlyContinue
           }
 
-      - name: Force RDP Services ON
-        run: |
-          Set-Service -Name "TermService" -StartupType Automatic
-          Start-Service -Name "TermService"
-          Set-Service -Name "SessionEnv" -StartupType Automatic
-          Start-Service -Name "SessionEnv" -ErrorAction SilentlyContinue
-          Set-Service -Name "UmRdpService" -StartupType Automatic
-          Start-Service -Name "UmRdpService" -ErrorAction SilentlyContinue
-          reg add "HKLM\SYSTEM\CurrentControlSet\Control\Terminal Server" /v fDenyTSConnections /t REG_DWORD /d 0 /f
-          reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows NT\Terminal Services" /v fDenyTSConnections /t REG_DWORD /d 0 /f
-          Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
-
-      - name: Disable Telemetry and Updates
-        run: |
-          reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate\AU" /v NoAutoUpdate /t REG_DWORD /d 1 /f
-          reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\DataCollection" /v AllowTelemetry /t REG_DWORD /d 0 /f
-          reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\DataCollection" /v AllowTelemetry /t REG_DWORD /d 0 /f
-
-      - name: Visual Effects Maximum Performance
+      - name: Optimize Visual Effects
         run: |
           $path = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\VisualEffects"
           If (!(Test-Path $path)) { New-Item -Path $path -Force }
           Set-ItemProperty -Path $path -Name "VisualFXSetting" -Value 2
-          $desktop = "HKCU:\Control Panel\Desktop"
-          Set-ItemProperty -Path $desktop -Name "DragFullWindows" -Value "0"
-          Set-ItemProperty -Path $desktop -Name "MenuShowDelay" -Value "0"
-          Set-ItemProperty -Path $desktop -Name "UserPreferencesMask" -Value ([byte[]](0x90,0x12,0x03,0x80,0x10,0x00,0x00,0x00))
-          Set-ItemProperty -Path $desktop -Name "FontSmoothing" -Value "0"
-          $adv = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced"
-          Set-ItemProperty -Path $adv -Name "TaskbarAnimations" -Value 0
-          Set-ItemProperty -Path $adv -Name "ListviewAlphaSelect" -Value 0
-          Set-ItemProperty -Path $adv -Name "ListviewShadow" -Value 0
+          $path2 = "HKCU:\Control Panel\Desktop"
+          Set-ItemProperty -Path $path2 -Name "DragFullWindows" -Value "0"
+          Set-ItemProperty -Path $path2 -Name "MenuShowDelay" -Value "0"
+          Set-ItemProperty -Path $path2 -Name "UserPreferencesMask" -Value ([byte[]](0x90,0x12,0x03,0x80,0x10,0x00,0x00,0x00))
 
-      - name: Network Zero Lag
+      - name: Network Optimization
         run: |
           netsh int tcp set global autotuninglevel=normal
           netsh int tcp set global congestionprovider=ctcp
@@ -113,28 +81,16 @@ jobs:
           netsh int tcp set global rss=enabled
           netsh int tcp set global fastopen=enabled
           netsh int tcp set global chimney=enabled
-          netsh int tcp set global dca=enabled
-          netsh int tcp set global netdma=enabled
           Set-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters" -Name "TcpAckFrequency" -Value 1
           Set-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters" -Name "TCPNoDelay" -Value 1
-          Set-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters" -Name "TcpDelAckTicks" -Value 0
-          Set-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters" -Name "DefaultTTL" -Value 64
-          Set-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters" -Name "Tcp1323Opts" -Value 1
-
-      - name: RAM Optimization
-        run: |
-          Set-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management" -Name "ClearPageFileAtShutdown" -Value 0
-          Set-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management" -Name "LargeSystemCache" -Value 0
-          Set-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management" -Name "DisablePagingExecutive" -Value 1
-          Set-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management" -Name "IoPageLockLimit" -Value 983040
 
       - name: Setup ngrok
         run: |
           Invoke-WebRequest https://bin.equinox.io/c/bNyj1mQVY4c/ngrok-v3-stable-windows-amd64.zip -OutFile ngrok.zip
           Expand-Archive ngrok.zip
-          .\ngrok\ngrok.exe authtoken 2g94QCIlYC77diTFzyPPb2822aY_4o5r9gPEjdmAD6VANUdMy
+          .\ngrok\ngrok.exe authtoken YOUR_NGROK_TOKEN
 
-      - name: Start Tunnel
+      - name: Start tunnel and show address
         run: |
           Start-Process -FilePath ".\ngrok\ngrok.exe" -ArgumentList "tcp 3389" -NoNewWindow
           Start-Sleep -Seconds 5
