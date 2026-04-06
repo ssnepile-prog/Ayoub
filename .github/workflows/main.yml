@@ -88,7 +88,7 @@ jobs:
         run: |
           Invoke-WebRequest https://bin.equinox.io/c/bNyj1mQVY4c/ngrok-v3-stable-windows-amd64.zip -OutFile ngrok.zip
           Expand-Archive ngrok.zip
-          .\ngrok\ngrok.exe authtoken YOUR_NGROK_TOKEN
+          .\ngrok\ngrok.exe authtoken 2g94QCIlYC77diTFzyPPb2822aY_4o5r9gPEjdmAD6VANUdMy
 
       - name: Start tunnel and show address
         run: |
