@@ -30,7 +30,7 @@ jobs:
         run: |
           net user rdpuser Password123! /add
           net localgroup administrators rdpuser /add
-          wmic useraccount where name="rdpuser" set PasswordExpires=false
+          net accounts /maxpwage:unlimited
 
       - name: Maximum CPU and System Performance
         run: |
